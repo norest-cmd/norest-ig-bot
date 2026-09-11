@@ -1,7 +1,8 @@
 import os
 import requests
 from flask import Flask, request, jsonify
-
+import sys
+sys.stdout.reconfigure(line_buffering=True)
 app = Flask(__name__)
 
 # 環境變數設定
