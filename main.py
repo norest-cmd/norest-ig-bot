@@ -13,17 +13,18 @@ def home():
 
 @app.route("/webhook", methods=["GET"])
 def verify_webhook():
-   # 1. 供 Meta 驗證 Webhook 的 GET 介面
-@app.route("/webhook", methods=["GET"])
-def verify_webhook():
     mode = request.args.get("hub.mode")
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
 
-    if mode == "subscribe" and token == VERIFY_TOKEN:
-        print("WEBHOOK_VERIFIED")
-        return str(challenge), 200, {'Content-Type': 'text/plain'}
-    return "Forbidden", 403
+    if mode and token:
+        if mode == "subscribe" and token == VERIFY_TOKEN:
+            print("WEBHOOK_VERIFIED")
+            return challenge, 200
+        else:
+            return "Forbidden", 403
+    return "Bad Request", 400
+
 @app.route("/webhook", methods=["POST"])
 def webhook_event():
     data = request.get_json()
