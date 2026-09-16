@@ -135,17 +135,26 @@ def graph_post(path, payload):
         return None, repr(e)
 
 
+COMMENT_REPLY_TEXT = (
+    "嗨！收到你的留言囉\n"
+    "帶 3-8 個月的幼犬出門散步，是不是常常覺得手比腳還酸，又擔心牠留下了不好的記憶呢？"
+    "別擔心，社會化不是「什麼都見過」，而是要讓牠「覺得安全」。\n"
+    "10/3 (六) 的幼犬散步練習課，我們會依月齡體型分隊，由專業訓練師帶你們從第一步就練對！\n\n"
+    "課程完整流程與報名連結：\n"
+    "https://lustrous-baklava-e6e6f4.netlify.app\n\n"
+    "點擊連結可以看到：\n"
+    "當天的完整流程與時間\n"
+    "這堂課會練到的 4 件事\n"
+    "不帶狗狗也能參加的講座票說明\n"
+    "早鳥優惠與報名連結\n"
+    "期待陪你跟狗狗一起快樂散步！"
+)
+
+
 def private_reply(comment_id):
-    text = (
-        "🐶 哈囉！很高興收到您的留言～\n\n"
-        "關於 NOREST「從心出發的散步練習」（10/3）的活動詳情與指南，"
-        "請點擊下方連結查看最新資訊喔！👇\n\n"
-        f"{WALK_LINK}\n\n"
-        "如果有任何問題，隨時私訊我們，NOREST 客服會為您服務！🐾"
-    )
     status, body = graph_post(
         "me/messages",
-        {"recipient": {"comment_id": comment_id}, "message": {"text": text}},
+        {"recipient": {"comment_id": comment_id}, "message": {"text": COMMENT_REPLY_TEXT}},
     )
     print("Private Reply Response:", status, body)
 
