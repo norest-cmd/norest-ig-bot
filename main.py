@@ -168,13 +168,15 @@ https://lustrous-baklava-e6e6f4.netlify.app
 # （留言同時含「幼犬」和「散步」時，傳幼犬版）
 KEYWORD_REPLIES = [
     ("幼犬", PUPPY_TEXT),
+    ("walk", PUPPY_TEXT),  # 英文不分大小寫：walk / Walk / WALK 都算
     ("散步", WALK_TEXT),
 ]
 
 
 def match_reply(text):
+    lowered = text.lower()
     for keyword, reply in KEYWORD_REPLIES:
-        if keyword in text:
+        if keyword in lowered:
             return reply
     return None
 
@@ -231,9 +233,6 @@ def call_claude(user_message):
         print("Claude API Error:", repr(e))
     return fallback
 
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
