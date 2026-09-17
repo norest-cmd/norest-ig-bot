@@ -21,7 +21,6 @@ CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5")
 APP_SECRET = os.getenv("IG_APP_SECRET", "")
 
 GRAPH = "https://graph.instagram.com/v21.0"
-KEYWORD = "散步"
 
 # 活動連結（純網址，不可用 Markdown 格式）
 WALK_LINK = (
@@ -98,8 +97,9 @@ def process_event(data):
                 from_id = str(value.get("from", {}).get("id", ""))
                 if not comment_id or from_id == my_id:
                     continue  # 忽略自己的留言
-                if KEYWORD in text and not already_handled("c:" + comment_id):
-                    private_reply(comment_id)
+                reply = match_reply(text)
+                if reply and not already_handled("c:" + comment_id):
+                    private_reply(comment_id, reply)
 
             # 2. 私訊
             for m in entry.get("messaging", []):
@@ -135,38 +135,60 @@ def graph_post(path, payload):
         return None, repr(e)
 
 
-COMMENT_REPLY_TEXT = (
-    "嗨！收到你的留言囉\n"
-    "帶 3-8 個月的幼犬出門散步，是不是常常覺得手比腳還酸，又擔心牠留下了不好的記憶呢？"
-    "別擔心，社會化不是「什麼都見過」，而是要讓牠「覺得安全」。\n"
-    "10/3 (六) 的幼犬散步練習課，我們會依月齡體型分隊，由專業訓練師帶你們從第一步就練對！\n\n"
-    "課程完整流程與報名連結：\n"
-    "https://lustrous-baklava-e6e6f4.netlify.app\n\n"
-    "點擊連結可以看到：\n"
-    "當天的完整流程與時間\n"
-    "這堂課會練到的 4 件事\n"
-    "不帶狗狗也能參加的講座票說明\n"
-    "早鳥優惠與報名連結\n"
-    "期待陪你跟狗狗一起快樂散步！"
-)
+PUPPY_TEXT = """嗨！收到你的留言囉 🐾
+帶 3-8 個月的幼犬出門散步，是不是常常覺得手比腳還酸，又擔心牠留下了不好的記憶呢？別擔心，社會化不是「什麼都見過」，而是要讓牠「覺得安全」。
+10/3 (六) 的幼犬散步練習課，我們會依月齡體型分隊，由專業訓練師帶你們從第一步就練對！
+
+🔗 課程完整流程與報名連結：
+https://lustrous-baklava-e6e6f4.netlify.app
+
+點擊連結可以看到：
+🐾 當天的完整流程與時間
+🐕 這堂課會練到的 4 件事
+🎟️ 不帶狗狗也能參加的講座票說明
+🎁 早鳥優惠與報名連結
+期待陪你跟狗狗一起快樂散步！"""
+
+WALK_TEXT = """嗨！收到你的留言了 💛
+我們知道對高敏感的狗狗來說，每次出門都是一場需要鼓起勇氣的外出。牠不是不乖，是真的會害怕。
+10/3 (六) 在台北信義的極致小班課，我們會慢慢來、不趕進度。
+如果當天狗狗狀況真的不好，也可以現場改成講座票（差額全額退還），絕對不用為了這堂課讓牠勉強。
+
+🔗 詳細課程資訊與報名連結：
+https://lustrous-baklava-e6e6f4.netlify.app
+
+點擊連結查看：
+🐾 當天完整流程與時間
+🐕 這堂課會練到的 4 件事
+🎟️ 不帶狗狗也能參加的講座票說明
+🎁 早鳥優惠與報名連結
+讓我們一起陪伴狗狗，重新找回散步的安全感！"""
+
+# 關鍵字 → 回覆內容。由上往下比對，第一個符合的生效
+# （留言同時含「幼犬」和「散步」時，傳幼犬版）
+KEYWORD_REPLIES = [
+    ("幼犬", PUPPY_TEXT),
+    ("散步", WALK_TEXT),
+]
 
 
-def private_reply(comment_id):
+def match_reply(text):
+    for keyword, reply in KEYWORD_REPLIES:
+        if keyword in text:
+            return reply
+    return None
+
+
+def private_reply(comment_id, reply_text):
     status, body = graph_post(
         "me/messages",
-        {"recipient": {"comment_id": comment_id}, "message": {"text": COMMENT_REPLY_TEXT}},
+        {"recipient": {"comment_id": comment_id}, "message": {"text": reply_text}},
     )
     print("Private Reply Response:", status, body)
 
 
 def handle_dm(sender_id, text):
-    if KEYWORD in text:
-        reply = (
-            "🐶 歡迎了解 NOREST「從心出發的散步練習」（10/3）！\n"
-            f"請點擊下方連結查看活動指南與詳情：\n{WALK_LINK}"
-        )
-    else:
-        reply = call_claude(text)
+    reply = match_reply(text) or call_claude(text)
     status, body = graph_post(
         "me/messages",
         {"recipient": {"id": sender_id}, "message": {"text": reply}},
@@ -209,6 +231,9 @@ def call_claude(user_message):
         print("Claude API Error:", repr(e))
     return fallback
 
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
